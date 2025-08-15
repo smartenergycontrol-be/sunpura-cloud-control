@@ -20,47 +20,71 @@ _LOGGER = logging.getLogger(__name__)
 
 async def async_setup_entry(hass, entry):
         """Set up the sensor platform from a config entry."""
-        # Initialize your integration here (e.g., fetch data)
-        hass.data.setdefault(DOMAIN, {})
-        
-        # _LOGGER.info(f"plant:{entry.data['devices']}")
-        hub = MyIntegrationHub(
-            hass,
-            entry.data["username"],
-            entry.data["password"],
-            entry.data["selected_device_id"],
-        )
-        hass.data[DOMAIN]['hub'] = hub
-        hass.data[DOMAIN]['cur_plant_name']= entry.data["selected_device_name"]
-        # 创建设备实体管理器
-        from .device_entity_manager import DeviceEntityManager
-        device_manager = DeviceEntityManager(hass, hub)
-        hass.data[DOMAIN]['device_manager'] = device_manager
-        # 获取设备数据并创建实体
-        await hub.login()
-        await hub.getPlantVos()
-        await hub.get_home_control_devices()
         try:
-            device_data = await hub.getHomeCountData()
-            if device_data:
-                _LOGGER.info(f"设备数据: {device_data}")
-                entities = await device_manager.create_entities_from_data(device_data)
-                _LOGGER.info(f"创建的实体: {entities}")
-                _LOGGER.info(f"创建的设备: {device_manager.devices}")
+            _LOGGER.info("Starting Sunpura Battery integration setup")
+            
+            # Initialize your integration here (e.g., fetch data)
+            hass.data.setdefault(DOMAIN, {})
+            
+            _LOGGER.debug("Creating hub instance")
+            hub = MyIntegrationHub(
+                hass,
+                entry.data["username"],
+                entry.data["password"],
+                entry.data["selected_device_id"],
+            )
+            hass.data[DOMAIN]['hub'] = hub
+            hass.data[DOMAIN]['cur_plant_name']= entry.data["selected_device_name"]
+            
+            _LOGGER.debug("Importing DeviceEntityManager")
+            # 创建设备实体管理器
+            from .device_entity_manager import DeviceEntityManager
+            device_manager = DeviceEntityManager(hass, hub)
+            hass.data[DOMAIN]['device_manager'] = device_manager
+            
+            _LOGGER.debug("Starting API calls")
+            # 获取设备数据并创建实体
+            await hub.login()
+            _LOGGER.debug("Login completed")
+            
+            await hub.getPlantVos()
+            _LOGGER.debug("getPlantVos completed")
+            
+            await hub.get_home_control_devices()
+            _LOGGER.debug("get_home_control_devices completed")
+            
+            try:
+                device_data = await hub.getHomeCountData()
+                _LOGGER.debug(f"getHomeCountData completed: {device_data is not None}")
+                
+                if device_data:
+                    _LOGGER.info(f"设备数据: {device_data}")
+                    entities = await device_manager.create_entities_from_data(device_data)
+                    _LOGGER.info(f"创建的实体: {entities}")
+                    _LOGGER.info(f"创建的设备: {device_manager.devices}")
 
-                if entities:
-                    # for platform in PLATFORMS:
-                    await hass.async_create_task(
-                        hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
-                    )
-            else:
-                _LOGGER.error("Failed to get device data from API")
+                    if entities:
+                        _LOGGER.debug("Setting up platforms")
+                        # for platform in PLATFORMS:
+                        await hass.async_create_task(
+                            hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+                        )
+                        _LOGGER.debug("Platforms setup completed")
+                else:
+                    _LOGGER.error("Failed to get device data from API")
+                    return False
+            except Exception as e:
+                _LOGGER.error(f"Error during device data setup: {e}", exc_info=True)
                 return False
+            
+            _LOGGER.debug("Starting polling")
+            await hub.start_polling()
+            await hub.start_schedule_login()
+            
+            _LOGGER.info("Sunpura Battery integration setup completed successfully")
         except Exception as e:
-            _LOGGER.error(f"Error during setup: {e}")
+            _LOGGER.error(f"Fatal error during integration setup: {e}", exc_info=True)
             return False
-        await hub.start_polling()
-        await hub.start_schedule_login()
 
 
 
