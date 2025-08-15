@@ -33,7 +33,8 @@ class DeviceEntityManager:
 
     async def create_entities_from_data(self, data: dict) -> dict[str, list[Any]]:
         """根据API返回的数据创建设备实体"""
-
+        
+        _LOGGER.debug(f"植物数据键名: {list(data.keys())}")
         entities: dict[str, list[Any]] = {"sensor": [], "switch": []}
         # 处理负载设备列表
         if 'loadList' in data and data['loadList']:
@@ -147,6 +148,46 @@ class DeviceEntityManager:
                 _LOGGER.debug(f"电表displayMap:{res["displayMap"].items()}")
                 for k,v in res["displayMap"].items():
                     entities["sensor"].append(AeccSensor(self.hub, em, k, em.device_sn+k, ""))
+
+        # 处理电池设备 (检查不同的可能字段名)
+        battery_sn = data.get("batSn") or data.get("batterySn") or data.get("storageSn")
+        battery_type = data.get("batType") or data.get("batteryType") or data.get("storageType")
+        
+        if battery_sn is not None:
+            res = await self.hub.fetch_device_info(battery_type, battery_sn)
+            
+            if res:
+                _LOGGER.debug(f"电池新建：{res}")
+                battery = self.dcm.create_device(device_info={
+                    "deviceSn": battery_sn,
+                    "deviceName": battery_sn,
+                    "datalogSn": battery_sn,
+                    "iconType": 2,
+                    "type": battery_type,
+                    "deviceCodeType": 0,
+                    "status": 0,
+                    "switchStatus": 0,
+                })
+                self.devices.append(battery)
+                _LOGGER.debug(f"电池displayMap:{res["displayMap"].items()}")
+                for k, v in res["displayMap"].items():
+                    entities["sensor"].append(AeccSensor(self.hub, battery, k, battery.device_sn + k, ""))
+
+        # 处理电池设备列表 (如果存在 batteryList)
+        if 'batteryList' in data and data['batteryList']:
+            for battery_info in data['batteryList']:
+                if battery_info.get('iconType') == 2:  # 电池类型
+                    _LOGGER.debug(f"电池列表新建：{battery_info}")
+                    battery_device = self.dcm.create_device(device_info=battery_info)
+                    self.devices.append(battery_device)
+                    
+                    # 获取详细的电池信息
+                    res = await self.hub.fetch_device_info(battery_info.get('deviceType'), battery_info.get('datalogSn'))
+                    if res and res.get("displayMap"):
+                        _LOGGER.debug(f"电池列表displayMap:{res["displayMap"].items()}")
+                        for k, v in res["displayMap"].items():
+                            entities["sensor"].append(AeccSensor(self.hub, battery_device, k, battery_device.device_sn + k, ""))
+
         if  data.get("solarSn") is not None:
             res = await self.hub.fetch_device_info( data.get("solarType"),data.get("solarSn"))
             if res:
