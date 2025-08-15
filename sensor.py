@@ -180,89 +180,87 @@ class AeccSensor(SensorEntity):
             # Store original value for debugging
             original_value = v
 
-
-        if self._key == "aiSystemStatus":
-            # _LOGGER.info(f"获取到AI模式数据: {ai}")
-            if ai and ai['antiRefluxSet'] == 1:
-                if ai['powerTimeSetVos']:
-                    match ai['powerTimeSetVos'][0]['mode']:
-                        case 0:
-                            self._state = "peak"
-                        case 1:
-                            self._state = "trough"
-                        case 2:
-                            self._state = "negative electricity price"
-                        case 3:
-                            self._state = "intelligent linkage"
-                        case 4:
-                            self._state = "Guardian Mode"
-                elif ai['powerMode'] == 1:
-                    self._state = "zero feed"
-                elif ai['powerMode'] == 0:
-                    self._state = "intelligent linkage"
+            if self._key == "aiSystemStatus":
+                # _LOGGER.info(f"获取到AI模式数据: {ai}")
+                if ai and ai['antiRefluxSet'] == 1:
+                    if ai['powerTimeSetVos']:
+                        match ai['powerTimeSetVos'][0]['mode']:
+                            case 0:
+                                self._state = "peak"
+                            case 1:
+                                self._state = "trough"
+                            case 2:
+                                self._state = "negative electricity price"
+                            case 3:
+                                self._state = "intelligent linkage"
+                            case 4:
+                                self._state = "Guardian Mode"
+                    elif ai['powerMode'] == 1:
+                        self._state = "zero feed"
+                    elif ai['powerMode'] == 0:
+                        self._state = "intelligent linkage"
+                else:
+                    self._state = "disable"
+                self._unit = ""
+            elif self._key == "plant_name":
+                # _LOGGER.info(f"获取到AI模式数据: {ai}")
+                self._state =self.hass.data[DOMAIN]['cur_plant_name']
+                self._unit = ""
             else:
-                self._state = "disable"
-            self._unit = ""
-        if self._key == "plant_name":
-            # _LOGGER.info(f"获取到AI模式数据: {ai}")
-            self._state =self.hass.data[DOMAIN]['cur_plant_name']
-            self._unit = ""
-        else:
-            if v:
-                _LOGGER.debug(f"未解析:{self._key}：{v}")
-                yz = split_value_unit(v)
-                _LOGGER.debug(f"解析后：{self._key},{yz}")
+                if v:
+                    _LOGGER.debug(f"未解析:{self._key}：{v}")
+                    yz = split_value_unit(v)
+                    _LOGGER.debug(f"解析后：{self._key},{yz}")
 
-                # 分离处理单位和数值
-                if yz[0] is not None:
-                    # Ensure numeric state for numeric sensors
-                    try:
-                        self._state = float(yz[0]) if isinstance(yz[0], (int, float, str)) and str(yz[0]).replace('.', '').replace('-', '').isdigit() else yz[0]
-                    except (ValueError, TypeError):
-                        self._state = yz[0]
-                
-                # Only update unit if it wasn't provided during initialization
-                if not self._unit and yz[1]:
-                    self._unit = yz[1]
-                # 替换 总负载功率=负载功率+家庭功率+充电桩功率
-                if self._key == "totalLoadPower":
-                    self._state = split_value_unit(new_data.get("homePower"))[0] + \
-                                  split_value_unit(new_data.get("loadPower"))[0] + \
-                                  split_value_unit(new_data.get("chargerTotalPower"))[0]
-                    self._unit = "W"
-                if self._key == "batPower":
-                    self._state = -(split_value_unit(new_data.get("batPower"))[0] *new_data.get("batWorkMode"))
-                    self._unit = "W"
-            elif v is None:
-                for k, mp in device_info.items():
-                    _LOGGER.debug(f"设备信息sn&key：{self._key},{k}")
-                    if self._key.startswith(k):
-                        _LOGGER.debug(f"设备信息更新：{self.field_name},{v}")
-                        if self.field_name is None:
-                            v = mp.get(self._name)
-                        else:
-                            v = mp.get(self.field_name)
+                    # 分离处理单位和数值
+                    if yz[0] is not None:
+                        # Ensure numeric state for numeric sensors
+                        try:
+                            self._state = float(yz[0]) if isinstance(yz[0], (int, float, str)) and str(yz[0]).replace('.', '').replace('-', '').isdigit() else yz[0]
+                        except (ValueError, TypeError):
+                            self._state = yz[0]
+                    
+                    # Only update unit if it wasn't provided during initialization
+                    if not self._unit and yz[1]:
+                        self._unit = yz[1]
+                    # 替换 总负载功率=负载功率+家庭功率+充电桩功率
+                    if self._key == "totalLoadPower":
+                        self._state = split_value_unit(new_data.get("homePower"))[0] + \
+                                      split_value_unit(new_data.get("loadPower"))[0] + \
+                                      split_value_unit(new_data.get("chargerTotalPower"))[0]
+                        self._unit = "W"
+                    if self._key == "batPower":
+                        self._state = -(split_value_unit(new_data.get("batPower"))[0] *new_data.get("batWorkMode"))
+                        self._unit = "W"
+                elif v is None:
+                    for k, mp in device_info.items():
+                        _LOGGER.debug(f"设备信息sn&key：{self._key},{k}")
+                        if self._key.startswith(k):
+                            _LOGGER.debug(f"设备信息更新：{self.field_name},{v}")
+                            if self.field_name is None:
+                                v = mp.get(self._name)
+                            else:
+                                v = mp.get(self.field_name)
 
-                        if v:
-                            yz = split_value_unit(v)
-                            _LOGGER.debug(f"解析后：{self._key},{yz}")
-                            # 分离处理单位和数值
-                            if yz[0] is not None:
-                                # Ensure numeric state for numeric sensors
-                                try:
-                                    self._state = float(yz[0]) if isinstance(yz[0], (int, float, str)) and str(yz[0]).replace('.', '').replace('-', '').isdigit() else yz[0]
-                                except (ValueError, TypeError):
-                                    self._state = yz[0]
+                            if v:
+                                yz = split_value_unit(v)
+                                _LOGGER.debug(f"解析后：{self._key},{yz}")
+                                # 分离处理单位和数值
+                                if yz[0] is not None:
+                                    # Ensure numeric state for numeric sensors
+                                    try:
+                                        self._state = float(yz[0]) if isinstance(yz[0], (int, float, str)) and str(yz[0]).replace('.', '').replace('-', '').isdigit() else yz[0]
+                                    except (ValueError, TypeError):
+                                        self._state = yz[0]
                                 
-                                # Only update unit if it wasn't provided during initialization
-                                if not self._unit and yz[1]:
-                                    self._unit = yz[1]
-                        elif self._key.endswith("as"):
-                            self._state = self.device.device_name
-                        break
-
-            else:
-                self._state = 0
+                                    # Only update unit if it wasn't provided during initialization
+                                    if not self._unit and yz[1]:
+                                        self._unit = yz[1]
+                            elif self._key.endswith("as"):
+                                self._state = self.device.device_name
+                            break
+                else:
+                    self._state = 0
                 
         except Exception as e:
             _LOGGER.error(f"Error updating sensor {self._name}: {e}")
