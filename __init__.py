@@ -40,18 +40,25 @@ async def async_setup_entry(hass, entry):
         await hub.login()
         await hub.getPlantVos()
         await hub.get_home_control_devices()
-        device_data = await hub.getHomeCountData()
-        if device_data:
-            _LOGGER.info(f"设备数据: {device_data}")
-            entities = await device_manager.create_entities_from_data(device_data)
-            _LOGGER.info(f"创建的实体: {entities}")
-            _LOGGER.info(f"创建的设备: {device_manager.devices}")
+        try:
+            device_data = await hub.getHomeCountData()
+            if device_data:
+                _LOGGER.info(f"设备数据: {device_data}")
+                entities = await device_manager.create_entities_from_data(device_data)
+                _LOGGER.info(f"创建的实体: {entities}")
+                _LOGGER.info(f"创建的设备: {device_manager.devices}")
 
-            if entities:
-                # for platform in PLATFORMS:
-              await  hass.async_create_task(
-                    hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
-              )
+                if entities:
+                    # for platform in PLATFORMS:
+                    await hass.async_create_task(
+                        hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+                    )
+            else:
+                _LOGGER.error("Failed to get device data from API")
+                return False
+        except Exception as e:
+            _LOGGER.error(f"Error during setup: {e}")
+            return False
         await hub.start_polling()
         await hub.start_schedule_login()
 

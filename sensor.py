@@ -55,7 +55,8 @@ class AeccSensor(SensorEntity):
                 "devices":hub.device_data,
                 "plants": hub.plants,
             }
-        self._attributes = {}
+        else:
+            self._attributes = {}
         _LOGGER.debug(f"创建传感器实体: {self.device}")
         # 注册到hub
         hub.add_entity(self)
@@ -162,16 +163,22 @@ class AeccSensor(SensorEntity):
             "model": self.device.icon_type,
             "manufacturer": "AECC",
         }
-    def update_data(self, new_data,device_info,ai):
-        # _LOGGER.debug(f"更新实体: {self._name}, hass={self.hass}")
-        # 解析嵌套数据示例
-        # _LOGGER.warning(new_data)
-        v = new_data.get(self._key)
-        # u = new_data.get(self._unit)
-        # _LOGGER.warning(f"{self._key},{v}")
-        
-        # Store original value for debugging
-        original_value = v
+    def update_data(self, new_data, device_info, ai):
+        """Update sensor data with proper error handling."""
+        if not new_data:
+            _LOGGER.debug(f"No data provided for sensor {self._name}")
+            return
+            
+        try:
+            # _LOGGER.debug(f"更新实体: {self._name}, hass={self.hass}")
+            # 解析嵌套数据示例
+            # _LOGGER.warning(new_data)
+            v = new_data.get(self._key)
+            # u = new_data.get(self._unit)
+            # _LOGGER.warning(f"{self._key},{v}")
+            
+            # Store original value for debugging
+            original_value = v
 
 
         if self._key == "aiSystemStatus":
@@ -256,10 +263,20 @@ class AeccSensor(SensorEntity):
 
             else:
                 self._state = 0
-        self.async_write_ha_state()
+                
+        except Exception as e:
+            _LOGGER.error(f"Error updating sensor {self._name}: {e}")
+            return
+
+        # Check if entity is properly initialized before updating state
         if not hasattr(self, "hass") or self.hass is None:
             _LOGGER.debug("实体未完成初始化，跳过状态更新")
             return
+            
+        try:
+            self.async_write_ha_state()
+        except Exception as e:
+            _LOGGER.error(f"Error writing state for sensor {self._name}: {e}")
 
         # _LOGGER.info(self.device)
         if self.device:

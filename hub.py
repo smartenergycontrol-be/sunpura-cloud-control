@@ -147,21 +147,31 @@ class MyIntegrationHub:
             await self.getPlantVos()
             await self.get_home_control_devices()
             new_data = await self.getHomeCountData(self.cur_ctl_devices)
-            devices_manager = self.hass.data[DOMAIN]['device_manager']
-            # 按设备sn请求设备详细数据
-            for device in devices_manager.devices:
-                if device.type != -1:
-                    _LOGGER.debug(f"开始更新设备：{device.type},{device.device_sn}")
-                    res = await self.fetch_device_info(device.type, device.device_sn)
-                    _LOGGER.debug(f"获取到设备信息：{res}")
-                    # if res and res["datalogSn"]==device.device_sn:
-                    self.devices_info[device.device_sn] = res["displayMap"]
             if new_data:
+                devices_manager = self.hass.data[DOMAIN]['device_manager']
+                # 按设备sn请求设备详细数据
+                for device in devices_manager.devices:
+                    if device.type != -1:
+                        _LOGGER.debug(f"开始更新设备：{device.type},{device.device_sn}")
+                        try:
+                            res = await self.fetch_device_info(device.type, device.device_sn)
+                            _LOGGER.debug(f"获取到设备信息：{res}")
+                            if res and res.get("displayMap"):
+                                self.devices_info[device.device_sn] = res["displayMap"]
+                        except Exception as e:
+                            _LOGGER.error(f"Error fetching device info for {device.device_sn}: {e}")
+                
                 # 更新设备所有关联实体
                 # 检测更新用时 获取当前时间
-                ai = await self.getAiSystemByPlantId()
-                for entity in self._entities:
-                    entity.update_data(new_data, self.devices_info, ai)
+                try:
+                    ai = await self.getAiSystemByPlantId()
+                    for entity in self._entities:
+                        if hasattr(entity, 'update_data'):
+                            entity.update_data(new_data, self.devices_info, ai)
+                except Exception as e:
+                    _LOGGER.error(f"Error updating entity data: {e}")
+            else:
+                _LOGGER.warning("No new data received from getHomeCountData")
 
         except Exception as e:
             _LOGGER.error(f"发生异常的行号是: {e.__traceback__.tb_lineno}, 异常信息: {e}")
@@ -170,15 +180,23 @@ class MyIntegrationHub:
 
     async def getHomeCountData(self, sn=""):
         url = BASE_URL + "/energy/getHomeCountData"
-        resp = await self.post({}, url, params={
-            "plantId": self.senceId,
-            "deviceSn":sn
-        })
-        _LOGGER.info(f"获取到能流数据：{resp}")
-        res = resp['obj']
-        _LOGGER.debug(res)
-        self.total_data = res
-        return res
+        try:
+            resp = await self.post({}, url, params={
+                "plantId": self.senceId,
+                "deviceSn": sn if sn else ""
+            })
+            if resp and resp.get('obj'):
+                _LOGGER.info(f"获取到能流数据：{resp}")
+                res = resp['obj']
+                _LOGGER.debug(res)
+                self.total_data = res
+                return res
+            else:
+                _LOGGER.error(f"Invalid response from getHomeCountData: {resp}")
+                return None
+        except Exception as e:
+            _LOGGER.error(f"Error in getHomeCountData: {e}")
+            return None
 
     # 获取用户下所有电站
     async def getPlantVos(self):
@@ -314,11 +332,21 @@ class MyIntegrationHub:
     async def get_home_control_devices(self):
         url = BASE_URL + "/energy/getHomeControlSn/"+self.senceId
         resp = await self.get({}, url)
-        res = resp['obj']
-        _LOGGER.info(res)
-        self.home_control_devices=res
-        self.cur_ctl_devices=res[0]['deviceSn']
-        return res
+        if resp and resp.get('obj'):
+            res = resp['obj']
+            _LOGGER.info(res)
+            self.home_control_devices=res
+            if res and len(res) > 0 and 'deviceSn' in res[0]:
+                self.cur_ctl_devices=res[0]['deviceSn']
+            else:
+                _LOGGER.warning("No control devices found or missing deviceSn")
+                self.cur_ctl_devices = None
+            return res
+        else:
+            _LOGGER.error("Failed to get home control devices")
+            self.home_control_devices = []
+            self.cur_ctl_devices = None
+            return []
 
     # 通用POST请求
     async def post(self, headers, url, data=None, params=None):
