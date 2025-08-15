@@ -1,0 +1,26 @@
+{
+  "title": "Sunpura Battery Control",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Sunpura Battery Control Setup",
+        "description": "Configure your Sunpura S2400 battery system",
+        "data": {
+          "username": "Username",
+          "password": "Password"
+        }
+      },
+      "confirm_discovery": {
+        "description": "\n\nSN: {device_sn}\nIP: {device_ip}\n Type: {device_type}"
+      }
+    },
+    "error": {
+      "cannot_connect": "Failed to connect",
+      "invalid_auth": "Invalid authentication",
+      "unknown": "Unexpected error"
+    },
+    "abort": {
+      "already_configured": "Device is already configured"
+    }
+  }
+}

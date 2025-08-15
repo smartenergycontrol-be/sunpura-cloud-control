@@ -1,0 +1,22 @@
+{
+  "domain": "sunpura_battery",
+  "name": "Sunpura Battery Control",
+  "codeowners": ["@smartenergycontrol-be"],
+  "config_flow": true,
+  "dependencies": [],
+  "documentation": "https://github.com/smartenergycontrol-be/sunpura-cloud-control",
+  "issue_tracker": "https://github.com/smartenergycontrol-be/sunpura-cloud-control/issues",
+  "homekit": {},
+  "iot_class": "cloud_polling",
+  "requirements": ["aiohttp"],
+  "ssdp": [],
+  "version": "2.0.0",
+  "zeroconf": [],
+  "translations": {
+    "_": [
+      "zh",
+      "en"
+    ]
+  },
+  "platforms": ["sensor", "switch", "number", "select"]
+}

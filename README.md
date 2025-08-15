@@ -1,46 +1,163 @@
-# Sunpura Battery Control
+# Sunpura Battery Control Integration for Home Assistant
 
-A Home Assistant custom integration for controlling Sunpura S2400 battery systems via cloud API.
+[![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/custom-components/hacs)
+[![GitHub release](https://img.shields.io/github/release/smartenergycontrol-be/sunpura-cloud-control.svg)](https://github.com/smartenergycontrol-be/sunpura-cloud-control/releases)
+[![GitHub license](https://img.shields.io/github/license/smartenergycontrol-be/sunpura-cloud-control.svg)](https://github.com/smartenergycontrol-be/sunpura-cloud-control/blob/main/LICENSE)
+
+A comprehensive Home Assistant integration for monitoring and controlling Sunpura S2400 battery systems through their cloud API.
 
 ## Features
 
-- **Complete sensor monitoring**: Battery state, solar production, grid consumption, and more
-- **Battery control**: Charge/discharge control with proper solar production handling
-- **Grid interaction**: Configure grid export limits and zero-feed modes
-- **Fixed data types**: All numeric sensors display as proper numbers (not text)
-- **Smart operation**: Excess solar always exports to grid unless specifically disabled
+✅ **Real-time Monitoring**
+- Battery voltage, current, and state of charge (SOC)
+- Power flow: charging, discharging, grid import/export
+- Inverter status and performance metrics
+- Temperature monitoring
+
+✅ **Energy Management**
+- Daily, monthly, and total energy production/consumption tracking
+- PV generation monitoring
+- Load consumption analysis
+- Grid interaction metrics
+
+✅ **Battery Control**
+- Advanced charging/discharging control
+- Multiple operation modes (peak shaving, zero feed, etc.)
+- Time-based charging schedules
+- Battery protection settings
+
+✅ **Device Management**
+- Support for multiple battery units and inverters
+- Device status and diagnostics
+- Automatic device discovery
+
+## Supported Devices
+
+- Sunpura S2400 Battery Systems
+- Compatible Sunpura Inverters with cloud connectivity
+- All devices that use the Sunpura cloud API (monitor.ai-ec.cloud)
 
 ## Installation
 
-1. Copy the `sunpura_battery` folder to your Home Assistant `custom_components` directory:
-   ```
-   /config/custom_components/sunpura_battery/
-   ```
+### Option 1: HACS (Recommended)
 
-2. Restart Home Assistant
+1. **Add Custom Repository:**
+   - Open HACS in Home Assistant
+   - Go to **Integrations**
+   - Click the **⋮** menu and select **Custom repositories**
+   - Add repository URL: `https://github.com/smartenergycontrol-be/sunpura-cloud-control`
+   - Category: **Integration**
+   - Click **Add**
 
-3. Add the integration via Settings → Devices & Services → Add Integration
+2. **Install Integration:**
+   - Search for "Sunpura Battery Control" in HACS
+   - Click **Download**
+   - Restart Home Assistant
+
+3. **Configure Integration:**
+   - Go to **Settings** → **Devices & Services**
+   - Click **Add Integration**
    - Search for "Sunpura Battery Control"
-   - Enter your Sunpura cloud credentials
+   - Enter your Sunpura app credentials:
+     - Username (same as used in Sunpura mobile app)
+     - Password (same as used in Sunpura mobile app)
 
-## Control Entities
+### Option 2: Manual Installation
 
-- `number.battery_power_control`: Battery charge/discharge (-2400W to +2400W)
-- `number.max_grid_feed_power`: Maximum grid export power (0W to 2400W)
-- `number.minimum_discharge_soc`: Minimum battery discharge level (5% to 50%)
-- `select.battery_operation_mode`: Operation modes (intelligent, zero_feed, manual, etc.)
-- `select.grid_interaction_mode`: Grid interaction settings
+1. **Download Integration:**
+   ```bash
+   cd /config/custom_components
+   git clone https://github.com/smartenergycontrol-be/sunpura-cloud-control.git
+   mv sunpura-cloud-control/custom_components/sunpura_battery .
+   rm -rf sunpura-cloud-control
+   ```
 
-## Key Improvement
+2. **Restart Home Assistant**
 
-**Solar Production Issue Fixed**: Unlike other implementations, this integration ensures that when battery control is active, excess solar production continues to export to the grid instead of stopping solar panel production entirely.
+3. **Configure Integration** (same as step 3 above)
 
-## Requirements
+## Configuration
 
-- Home Assistant 2023.1+
-- Sunpura S2400 battery system
-- Valid Sunpura cloud account credentials
+The integration uses the same credentials as the Sunpura mobile app:
 
-## API Documentation
+| Field | Description | Required |
+|-------|-------------|----------|
+| Username | Your Sunpura cloud account username/email | Yes |
+| Password | Your Sunpura cloud account password | Yes |
 
-Based on official Sunpura API v1.2.2 with comprehensive battery control capabilities.
+The integration will automatically:
+- Discover your battery systems and inverters
+- Create appropriate sensors and controls
+- Set up proper device classes and units
+
+## Entities Created
+
+### Sensors
+- Battery voltage, current, and SOC
+- Power readings (charging/discharging/grid)
+- Energy counters (daily/monthly/total)
+- Device status and temperatures
+- Grid parameters (voltage, frequency)
+
+### Switches
+- Battery operation mode controls
+- Grid interaction settings
+- Device enable/disable controls
+
+### Numbers
+- Charging current limits
+- Power set points
+- Voltage thresholds
+
+### Selects
+- Operation mode selection
+- Priority settings
+- Time schedule selection
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Integration won't load:**
+   - Check Home Assistant logs for detailed error messages
+   - Verify your Sunpura app credentials are correct
+   - Ensure internet connectivity to Sunpura cloud
+
+2. **No devices found:**
+   - Verify your battery system is online in the Sunpura app
+   - Check that your account has access to the devices
+   - Wait a few minutes for device discovery
+
+3. **Sensor values not updating:**
+   - Check the integration debug logs
+   - Verify cloud API connectivity
+   - Restart the integration
+
+### Debug Logging
+
+Add to your `configuration.yaml`:
+
+```yaml
+logger:
+  default: info
+  logs:
+    custom_components.sunpura_battery: debug
+```
+
+## Support
+
+- **Issues**: [GitHub Issues](https://github.com/smartenergycontrol-be/sunpura-cloud-control/issues)
+- **Feature Requests**: [GitHub Issues](https://github.com/smartenergycontrol-be/sunpura-cloud-control/issues)
+- **Documentation**: [GitHub Wiki](https://github.com/smartenergycontrol-be/sunpura-cloud-control/wiki)
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit pull requests or create issues for bugs and feature requests.
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Disclaimer
+
+This integration is not officially supported by Sunpura. Use at your own risk. The developers are not responsible for any damage to your equipment.
