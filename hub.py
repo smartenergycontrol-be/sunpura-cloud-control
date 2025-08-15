@@ -64,10 +64,13 @@ class MyIntegrationHub:
         self.plants = []
         self.home_control_devices=[]
         self.cur_ctl_devices = None
-        self.lang=langs[hass.config.language.lower()]
-        _LOGGER.error(f'lang : {self.lang}')
-        if self.lang is None:
-            self.lang='en-US'
+        try:
+            language_key = hass.config.language.lower() if hasattr(hass.config, 'language') else 'en'
+            self.lang = langs.get(language_key, 'en-US')
+            _LOGGER.debug(f'Language set to: {self.lang}')
+        except Exception as e:
+            _LOGGER.warning(f'Failed to get language config, using default: {e}')
+            self.lang = 'en-US'
 
     async def login(self, now=None):
         # 重新登录 并启动轮询
