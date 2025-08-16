@@ -57,24 +57,21 @@ class SunpuraBatteryPowerNumber(NumberEntity):
             _LOGGER.error(f"Failed to set battery power to {value}W: {e}")
 
     async def _set_battery_power(self, power: int):
-        """Set battery power via API with smart grid export handling."""
-        _LOGGER.info(f"Setting battery power to {power}W")
+        """Set battery power via API - simplified for EMHASS control."""
+        _LOGGER.info(f"Setting battery power to {power}W (+ = charge, - = discharge)")
         
-        # Smart parameter logic to preserve solar export
+        # Simplified logic: always preserve solar export regardless of battery action
         if power == 0:
-            # No battery action - allow full solar export to grid
+            # No battery action - pure intelligent mode
             energy_mode = 0  # Manual mode
-            power_mode = 0   # Intelligent mode
-            anti_reflux = 0  # Allow grid export
-            time_mode = 0    # Disable time scheduling
+            time_mode = 0    # No time scheduling
             control_time = "0,00:00,00:00,0,0,0,0,0,0,100,10"
             power_time_set_vos = []
+            forced_power = 0
         else:
-            # Active battery control - still allow excess solar to grid
-            energy_mode = 2  # AI mode for battery control
-            power_mode = 0   # Intelligent mode (NOT zero-feed)
-            anti_reflux = 0  # Critical: Allow grid export of excess solar
-            time_mode = 1    # Enable time scheduling for battery
+            # Battery action requested - use time scheduling for precise control
+            energy_mode = 0  # Manual mode (not AI) for predictable behavior
+            time_mode = 1    # Enable time scheduling
             
             now = datetime.now()
             start_time = now.strftime("%H:%M")
@@ -97,7 +94,9 @@ class SunpuraBatteryPowerNumber(NumberEntity):
                     "chargingSOC": 100     # Charge to 100%
                 }
             ]
+            forced_power = power
 
+        # Fixed parameters to ensure solar always exports to grid
         payload = {
             "id": 0,
             "sn": self.device.device_sn,
@@ -107,14 +106,14 @@ class SunpuraBatteryPowerNumber(NumberEntity):
             "basicDisChargeEnable": 0,
             "batBasicDisChargePower": 0,
             "batBasicDisChargeMaxPower": 800,
-            "maxFeedPower": 2400,        # Allow full solar export to grid
+            "maxFeedPower": 2400,        # Always allow full solar export
             "maxChargePower": 2400,
-            "antiRefluxSet": anti_reflux,  # Key fix: Allow grid export
-            "forcedPower": power if power != 0 else 0,
+            "antiRefluxSet": 0,          # Always allow grid export
+            "forcedPower": forced_power,
             "temporaryPower": 0,
-            "powerMode": power_mode,       # Key fix: Intelligent mode
-            "aiMode": 0,
-            "ctEnable": 1,                 # Enable CT for accurate measurement
+            "powerMode": 0,              # Always intelligent mode
+            "aiMode": 0,                 # No AI interference
+            "ctEnable": 1,               # Enable CT for accurate measurement
             "timeMode": time_mode,
             "ecVersion": "1.6",
             "plantId": self.hub.senceId,

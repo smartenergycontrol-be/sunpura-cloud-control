@@ -24,17 +24,14 @@ class SunpuraBatteryModeSelect(SelectEntity):
         self._attr_unique_id = f"{device.device_sn}_battery_mode"
         self._attr_icon = "mdi:battery-sync"
         
-        # Available modes based on API documentation
+        # Simplified modes for EMHASS integration
         self._attr_options = [
             "intelligent",      # Normal operation with grid export
-            "zero_feed",       # Prevent grid export (powerMode=1)
-            "manual_charge",   # Force charging regardless of solar
-            "manual_discharge", # Force discharging
-            "auto_schedule",   # Time-based scheduling
-            "eco_mode"        # Energy saving mode
+            "zero_feed",       # Prevent grid export (special cases only)
+            "manual_control"   # Let Home Assistant/EMHASS control via number entity
         ]
         
-        self._current_option = "intelligent"
+        self._current_option = "manual_control"
 
     @property
     def device_info(self):
@@ -63,61 +60,34 @@ class SunpuraBatteryModeSelect(SelectEntity):
         """Set battery operation mode via API."""
         _LOGGER.info(f"Setting battery mode to {mode}")
         
-        # Configure parameters based on selected mode
+        # Simplified mode configurations for EMHASS integration
         mode_configs = {
             "intelligent": {
                 "energyMode": 0,      # Manual mode
                 "powerMode": 0,       # Intelligent - allows grid export
                 "antiRefluxSet": 0,   # Allow grid export
-                "aiMode": 0,
-                "timeMode": 0,
-                "forcedPower": 0,
-                "description": "Normal operation with grid export of excess solar"
+                "aiMode": 0,          # No AI interference
+                "timeMode": 0,        # No time scheduling
+                "forcedPower": 0,     # No forced power
+                "description": "Normal operation - solar always exports excess to grid"
             },
             "zero_feed": {
                 "energyMode": 1,      # Zero feed mode
                 "powerMode": 1,       # Zero feed - prevents grid export
                 "antiRefluxSet": 1,   # Prevent grid export
-                "aiMode": 0,
-                "timeMode": 0,
-                "forcedPower": 0,
-                "description": "Prevent all grid export (WARNING: May stop solar production)"
+                "aiMode": 0,          # No AI interference
+                "timeMode": 0,        # No time scheduling
+                "forcedPower": 0,     # No forced power
+                "description": "Prevent grid export (WARNING: May limit solar production)"
             },
-            "manual_charge": {
-                "energyMode": 2,      # AI mode
-                "powerMode": 0,       # Intelligent
-                "antiRefluxSet": 0,   # Allow grid export
-                "aiMode": 1,
-                "timeMode": 0,
-                "forcedPower": 1000,  # Force 1kW charging
-                "description": "Force battery charging with grid export allowed"
-            },
-            "manual_discharge": {
-                "energyMode": 2,      # AI mode
-                "powerMode": 0,       # Intelligent
-                "antiRefluxSet": 0,   # Allow grid export
-                "aiMode": 1,
-                "timeMode": 0,
-                "forcedPower": -1000, # Force 1kW discharging
-                "description": "Force battery discharging with grid export allowed"
-            },
-            "auto_schedule": {
-                "energyMode": 2,      # AI mode
-                "powerMode": 0,       # Intelligent
-                "antiRefluxSet": 0,   # Allow grid export
-                "aiMode": 1,
-                "timeMode": 1,        # Enable time scheduling
-                "forcedPower": 0,
-                "description": "Automatic scheduling based on time periods"
-            },
-            "eco_mode": {
+            "manual_control": {
                 "energyMode": 0,      # Manual mode
-                "powerMode": 0,       # Intelligent
+                "powerMode": 0,       # Intelligent - allows grid export
                 "antiRefluxSet": 0,   # Allow grid export
-                "aiMode": 0,
-                "timeMode": 0,
-                "forcedPower": 0,
-                "description": "Energy saving mode with grid export"
+                "aiMode": 0,          # No AI interference
+                "timeMode": 0,        # Time scheduling controlled by number entity
+                "forcedPower": 0,     # Power controlled by number entity
+                "description": "Home Assistant/EMHASS controls battery via number entity"
             }
         }
         
