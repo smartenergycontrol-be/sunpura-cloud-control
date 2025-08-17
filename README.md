@@ -21,10 +21,12 @@ A comprehensive Home Assistant integration for monitoring and controlling Sunpur
 - Grid interaction metrics
 
 ✅ **Battery Control**
-- Advanced charging/discharging control
-- Multiple operation modes (peak shaving, zero feed, etc.)
-- Time-based charging schedules
-- Battery protection settings
+- **Advanced charging/discharging control** - Full manual control with power commands
+- **Forced discharge capability** - Battery will discharge when commanded, even with solar production
+- **Multiple operation modes** (peak shaving, zero feed, etc.)
+- **Time-based charging schedules** with precise power control
+- **Battery protection settings** and SOC limits
+- **EMHASS integration ready** - Compatible with energy management systems
 
 ✅ **Device Management**
 - Support for multiple battery units and inverters
@@ -90,6 +92,44 @@ The integration will automatically:
 - Create appropriate sensors and controls
 - Set up proper device classes and units
 
+## Battery Control Behavior
+
+### Power Control Logic
+
+The integration provides full manual control over battery charging and discharging:
+
+- **Positive values** (e.g., +1000W) = **Charge** the battery at specified power
+- **Negative values** (e.g., -1500W) = **Discharge** the battery at specified power  
+- **Zero (0W)** = **Idle** - let battery follow normal solar/load behavior
+
+### Forced Discharge Capability
+
+**Key Feature**: The battery will discharge when commanded, **even when solar power is available**.
+
+This is achieved through smart API mode selection:
+- **Charge commands** use intelligent mode (respects solar priority)
+- **Discharge commands** use zero-feed mode (forces discharge regardless of solar)
+
+### API Mode Details
+
+The integration uses these modes for different operations:
+
+| Power Command | Energy Mode | Power Mode | Behavior |
+|---------------|-------------|------------|----------|
+| 0W (Idle) | Manual (0) | Intelligent (0) | Normal solar/load behavior |
+| Positive (Charge) | AI (2) | Intelligent (0) | Smart charging with solar priority |
+| Negative (Discharge) | AI (2) | Zero-feed (1) | **Forced discharge overrides solar** |
+
+**Note**: Although "AI mode" is used, `aiMode: 0` disables automation. This mode provides advanced scheduling capabilities needed for precise manual control.
+
+### Integration with Energy Management
+
+Perfect for use with:
+- **EMHASS** (Energy Management for Home Assistant)
+- **Custom automations** for time-of-use optimization
+- **Solar excess management** strategies
+- **Peak shaving** applications
+
 ## Entities Created
 
 ### Sensors
@@ -105,6 +145,9 @@ The integration will automatically:
 - Device enable/disable controls
 
 ### Numbers
+- **Battery Power Control** - Set charge/discharge power (-2400W to +2400W)
+- **Max Grid Feed Power** - Control maximum solar export to grid
+- **Minimum Discharge SOC** - Battery protection setting
 - Charging current limits
 - Power set points
 - Voltage thresholds
@@ -132,6 +175,17 @@ The integration will automatically:
    - Check the integration debug logs
    - Verify cloud API connectivity
    - Restart the integration
+
+4. **Battery not following discharge commands:**
+   - Ensure you're using negative values for discharge (e.g., -1500W)
+   - Check that battery SOC is above minimum discharge level (default 10%)
+   - Verify the battery control entity is available and responding
+   - Note: The integration automatically uses zero-feed mode for discharge commands
+
+5. **Battery charging when discharge commanded:**
+   - This was a known issue fixed in recent versions
+   - Ensure you have the latest version of the integration
+   - Previous versions couldn't override solar charging - this is now resolved
 
 ### Debug Logging
 

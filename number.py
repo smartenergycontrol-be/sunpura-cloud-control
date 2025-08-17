@@ -70,11 +70,20 @@ class SunpuraBatteryPowerNumber(NumberEntity):
             control_time = "0,00:00,00:00,0,0,0,0,0,0,100,10"
             power_time_set_vos = []
         else:
-            # Active battery control - still allow excess solar to grid
+            # Active battery control
             energy_mode = 2  # AI mode for battery control
-            power_mode = 0   # Intelligent mode (NOT zero-feed)
-            anti_reflux = 0  # Critical: Allow grid export of excess solar
             time_mode = 1    # Enable time scheduling for battery
+            
+            # Differentiate between charge and discharge commands
+            if power < 0:
+                # DISCHARGE: Use zero-feed mode to force discharge, but keep antiRefluxSet=0
+                # This forces discharge while still allowing solar export when battery is full
+                power_mode = 1   # Zero-feed mode (forces discharge to override solar priority)
+                anti_reflux = 0  # Keep 0 to allow solar export when battery is full
+            else:
+                # CHARGE: Use intelligent mode with grid export
+                power_mode = 0   # Intelligent mode
+                anti_reflux = 0  # Allow grid export of excess solar
             
             now = datetime.now()
             start_time = now.strftime("%H:%M")
@@ -109,10 +118,10 @@ class SunpuraBatteryPowerNumber(NumberEntity):
             "batBasicDisChargeMaxPower": 800,
             "maxFeedPower": 2400,        # Allow full solar export to grid
             "maxChargePower": 2400,
-            "antiRefluxSet": anti_reflux,  # Key fix: Allow grid export
-            "forcedPower": power if power != 0 else 0,
+            "antiRefluxSet": anti_reflux,  # Use smart anti-reflux setting
+            "forcedPower": 0,              # Use time-based control instead of forced power
             "temporaryPower": 0,
-            "powerMode": power_mode,       # Key fix: Intelligent mode
+            "powerMode": power_mode,       # Smart power mode: 0=intelligent, 1=zero-feed for discharge
             "aiMode": 0,
             "ctEnable": 1,                 # Enable CT for accurate measurement
             "timeMode": time_mode,
