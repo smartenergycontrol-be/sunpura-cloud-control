@@ -173,9 +173,23 @@ class AeccSensor(SensorEntity):
             # _LOGGER.debug(f"更新实体: {self._name}, hass={self.hass}")
             # 解析嵌套数据示例
             # _LOGGER.warning(new_data)
-            v = new_data.get(self._key)
-            # u = new_data.get(self._unit)
-            # _LOGGER.warning(f"{self._key},{v}")
+            
+            # Special handling for battery data that's in storageList
+            if self._key in ['batSoc', 'batChargePower', 'batDischargePower', 'pvChargePower', 'acChargePower', 'devicePower']:
+                # Look in storageList first for battery-specific data
+                storage_list = new_data.get('storageList', [])
+                if storage_list and len(storage_list) > 0:
+                    storage_device = storage_list[0]  # First (main) storage device
+                    v = storage_device.get(self._key)
+                    if v is None:
+                        # Fallback to top-level data if not found in storage
+                        v = new_data.get(self._key)
+                else:
+                    # No storage list, use top-level data
+                    v = new_data.get(self._key)
+            else:
+                # Normal top-level data lookup for other sensors
+                v = new_data.get(self._key)
             
             # Store original value for debugging
             original_value = v

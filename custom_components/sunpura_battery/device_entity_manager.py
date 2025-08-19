@@ -225,7 +225,15 @@ class DeviceEntityManager:
             entities["sensor"].append(AeccSensor(self.hub, master, "em_type", "emType", ""))
             entities["sensor"].append(AeccSensor(self.hub, master, "em_sn", "emSn", ""))
 
+            # Battery sensors (now properly mapped from storageList)
             entities["sensor"].append(AeccSensor(self.hub, master, "soc", "batSoc", "%"))
+            entities["sensor"].append(AeccSensor(self.hub, master, "battery_charge_power", "batChargePower", "W"))
+            entities["sensor"].append(AeccSensor(self.hub, master, "battery_discharge_power", "batDischargePower", "W"))
+            entities["sensor"].append(AeccSensor(self.hub, master, "pv_charge_power", "pvChargePower", "W"))
+            entities["sensor"].append(AeccSensor(self.hub, master, "ac_charge_power", "acChargePower", "W"))
+            entities["sensor"].append(AeccSensor(self.hub, master, "device_power", "devicePower", "W"))
+            
+            # Energy sensors
             entities["sensor"].append(AeccSensor(self.hub, master, "solar_day_energy", "solarDayElec", "kWh"))
             entities["sensor"].append(AeccSensor(self.hub, master, "total_energy", "totalEnergy", "kWh"))
             entities["sensor"].append(AeccSensor(self.hub, master, "today_energy", "todayEnergy", "kWh"))
