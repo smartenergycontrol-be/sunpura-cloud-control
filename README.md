@@ -37,7 +37,7 @@ A comprehensive Home Assistant integration for monitoring and controlling Sunpur
 
 - Sunpura S2400 Battery Systems
 - Compatible Sunpura Inverters with cloud connectivity
-- All devices that use the Sunpura cloud API (monitor.ai-ec.cloud)
+- All devices that use the Sunpura cloud API (server-nj.ai-ec.cloud)
 
 ## Installation
 
@@ -164,7 +164,8 @@ Perfect for use with:
 1. **Integration won't load:**
    - Check Home Assistant logs for detailed error messages
    - Verify your Sunpura app credentials are correct
-   - Ensure internet connectivity to Sunpura cloud
+   - Ensure internet connectivity to Sunpura cloud (server-nj.ai-ec.cloud)
+   - **Note**: As of August 2025, Sunpura updated their API domain to server-nj.ai-ec.cloud
 
 2. **No devices found:**
    - Verify your battery system is online in the Sunpura app
